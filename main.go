@@ -5,12 +5,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Crawlora-org/crawlora-antibot/api"
@@ -27,14 +29,15 @@ type output struct {
 
 func main() {
 	var (
-		asJSON     = flag.Bool("json", false, "output JSON")
-		difficulty = flag.Bool("difficulty", false, "also fetch the live MEASURED difficulty from the Crawlora API (needs an API key)")
-		deep       = flag.Bool("deep", false, "exhaustive measured sweep (implies -difficulty, fast=false)")
-		apiKey     = flag.String("api-key", os.Getenv("CRAWLORA_API_KEY"), "Crawlora API key (or env CRAWLORA_API_KEY)")
-		apiBase    = flag.String("api-base", envOr("CRAWLORA_API_BASE", api.DefaultBaseURL), "Crawlora API base URL (or env CRAWLORA_API_BASE)")
-		timeout    = flag.Duration("timeout", detect.DefaultTimeout, "per-request timeout for the local probe")
-		ua         = flag.String("user-agent", detect.DefaultUserAgent, "User-Agent for the local probe")
-		showVer    = flag.Bool("version", false, "print version and exit")
+		asJSON      = flag.Bool("json", false, "output JSON (NDJSON: one object per line)")
+		difficulty  = flag.Bool("difficulty", false, "also fetch the live MEASURED difficulty from the Crawlora API (needs an API key)")
+		deep        = flag.Bool("deep", false, "exhaustive measured sweep (implies -difficulty, fast=false)")
+		apiKey      = flag.String("api-key", os.Getenv("CRAWLORA_API_KEY"), "Crawlora API key (or env CRAWLORA_API_KEY)")
+		apiBase     = flag.String("api-base", envOr("CRAWLORA_API_BASE", api.DefaultBaseURL), "Crawlora API base URL (or env CRAWLORA_API_BASE)")
+		timeout     = flag.Duration("timeout", detect.DefaultTimeout, "per-request timeout for the local probe")
+		ua          = flag.String("user-agent", detect.DefaultUserAgent, "User-Agent for the local probe")
+		concurrency = flag.Int("concurrency", 8, "number of URLs to probe in parallel (batch mode)")
+		showVer     = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Usage = usage
 	flag.Parse()
@@ -43,50 +46,116 @@ func main() {
 		fmt.Println("crawlora-antibot", version)
 		return
 	}
-	urls := flag.Args()
+
+	urls := gatherURLs(flag.Args())
 	if len(urls) == 0 {
 		usage()
 		os.Exit(2)
 	}
-	useAPI := *difficulty || *deep
 
-	ctx := context.Background()
-	results := make([]output, 0, len(urls))
-	for _, raw := range urls {
-		u := normalizeURL(raw)
-		res := detect.Inspect(ctx, u, detect.ProbeOptions{UserAgent: *ua, Timeout: *timeout})
-		out := output{Result: res}
-		if useAPI {
-			if *apiKey == "" {
-				fmt.Fprintln(os.Stderr, "warning: --difficulty needs an API key (set CRAWLORA_API_KEY or --api-key); showing the local heuristic only")
-			} else if m, err := api.CheckDifficulty(ctx, *apiBase, *apiKey, u, !*deep, 90*time.Second); err != nil {
-				fmt.Fprintln(os.Stderr, "api:", err)
-			} else {
-				out.Measured = m
-			}
-		}
-		results = append(results, out)
+	useAPI := *difficulty || *deep
+	if useAPI && *apiKey == "" {
+		fmt.Fprintln(os.Stderr, "warning: --difficulty needs an API key (set CRAWLORA_API_KEY or --api-key); showing the local heuristic only")
+		useAPI = false
 	}
 
+	results := scanAll(context.Background(), urls, scanConfig{
+		ua: *ua, timeout: *timeout, useAPI: useAPI, deep: *deep,
+		apiKey: *apiKey, apiBase: *apiBase, concurrency: *concurrency,
+	})
+
 	if *asJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		var v any = results
-		if len(results) == 1 {
-			v = results[0]
-		}
-		if err := enc.Encode(v); err != nil {
-			fmt.Fprintln(os.Stderr, "encode:", err)
-			os.Exit(1)
+		enc := json.NewEncoder(os.Stdout) // compact + newline per record = NDJSON
+		for _, o := range results {
+			if err := enc.Encode(o); err != nil {
+				fmt.Fprintln(os.Stderr, "encode:", err)
+				os.Exit(1)
+			}
 		}
 		return
 	}
-	for i, out := range results {
+	for i, o := range results {
 		if i > 0 {
 			fmt.Println()
 		}
-		printHuman(out)
+		printHuman(o)
 	}
+}
+
+type scanConfig struct {
+	ua          string
+	timeout     time.Duration
+	useAPI      bool
+	deep        bool
+	apiKey      string
+	apiBase     string
+	concurrency int
+}
+
+// scanAll probes every URL (bounded parallelism) and returns results in input order.
+func scanAll(ctx context.Context, urls []string, cfg scanConfig) []output {
+	if cfg.concurrency < 1 {
+		cfg.concurrency = 1
+	}
+	results := make([]output, len(urls))
+	sem := make(chan struct{}, cfg.concurrency)
+	var wg sync.WaitGroup
+	for i, raw := range urls {
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(i int, raw string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			u := normalizeURL(raw)
+			res := detect.Inspect(ctx, u, detect.ProbeOptions{UserAgent: cfg.ua, Timeout: cfg.timeout})
+			out := output{Result: res}
+			if cfg.useAPI {
+				if m, err := api.CheckDifficulty(ctx, cfg.apiBase, cfg.apiKey, u, !cfg.deep, 90*time.Second); err != nil {
+					fmt.Fprintln(os.Stderr, "api:", u, "-", err)
+				} else {
+					out.Measured = m
+				}
+			}
+			results[i] = out
+		}(i, raw)
+	}
+	wg.Wait()
+	return results
+}
+
+// gatherURLs collects URLs from args, and from stdin when a "-" arg is given or
+// when stdin is piped and no positional URLs were passed (blank lines and
+// #-comments are ignored).
+func gatherURLs(args []string) []string {
+	var urls []string
+	readStdin := false
+	for _, a := range args {
+		if a == "-" {
+			readStdin = true
+			continue
+		}
+		urls = append(urls, a)
+	}
+	if readStdin || (len(urls) == 0 && stdinPiped()) {
+		sc := bufio.NewScanner(os.Stdin)
+		sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+		for sc.Scan() {
+			line := strings.TrimSpace(sc.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			urls = append(urls, strings.Fields(line)[0]) // tolerate "url  # note"
+		}
+	}
+	return urls
+}
+
+func stdinPiped() bool {
+	fi, err := os.Stdin.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice == 0
 }
 
 func printHuman(o output) {
@@ -172,11 +241,13 @@ func usage() {
 
 USAGE:
   crawlora-antibot [flags] <url> [url...]
+  cat urls.txt | crawlora-antibot [flags]
 
 EXAMPLES:
   crawlora-antibot example.com
   crawlora-antibot -json https://www.cloudflare.com
   CRAWLORA_API_KEY=... crawlora-antibot --difficulty https://www.g2.com
+  cat domains.txt | crawlora-antibot -json --concurrency 16 > results.ndjson
 
 FLAGS:
 `, version)

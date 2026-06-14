@@ -1,0 +1,44 @@
+# GoReleaser config (schema v2). Validate with `goreleaser check` before the
+# first release. Runs on tag push via .github/workflows/release.yml.
+version: 2
+
+project_name: crawlora-antibot
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  prerelease: auto
+
+# Homebrew tap — requires a `Crawlora-org/homebrew-tap` repo and a PAT with repo
+# scope in the HOMEBREW_TAP_GITHUB_TOKEN secret. Owner-gated; safe to leave until
+# going public.
+brews:
+  - name: crawlora-antibot
+    repository:
+      owner: Crawlora-org
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: "https://crawlora.net/anti-bot-index"
+    description: "Detect which anti-bot/WAF protects a site and how hard it is to scrape"
+    license: "MIT"
+    skip_upload: auto

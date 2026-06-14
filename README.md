@@ -28,6 +28,8 @@ git clone https://github.com/Crawlora-org/crawlora-antibot
 cd crawlora-antibot && go build -o crawlora-antibot .
 ```
 
+Prebuilt binaries (Linux/macOS/Windows) and a Homebrew formula (`brew install Crawlora-org/tap/crawlora-antibot`) ship via GitHub Releases once the repo is public.
+
 ## Usage
 
 ```sh
@@ -47,7 +49,14 @@ https://www.cloudflare.com
   (run with --difficulty for the live measured tier)
 ```
 
-`--json` emits a structured object (one per URL, or an array for many) — handy for piping into `jq` or a pipeline.
+`--json` emits **NDJSON** (one compact object per line) — pipe straight into `jq -c` or a data pipeline.
+
+**Batch / pipelines.** Pass many URLs as args, or pipe a list on stdin (one URL per line; blank lines and `#`-comments ignored). URLs are probed in parallel (`--concurrency`, default 8):
+
+```sh
+cat domains.txt | crawlora-antibot -json --concurrency 16 > results.ndjson
+printf 'cloudflare.com\nreuters.com\n' | crawlora-antibot
+```
 
 ### Measured difficulty (optional, hosted)
 
@@ -68,13 +77,14 @@ crawlora-antibot --difficulty example.com
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--json` | `false` | Output JSON. |
+| `--json` | `false` | Output JSON (NDJSON — one object per line). |
 | `--difficulty` | `false` | Also fetch the live **measured** difficulty from the Crawlora API (needs a key). |
 | `--deep` | `false` | Exhaustive measured sweep (implies `--difficulty`). |
 | `--api-key` | `$CRAWLORA_API_KEY` | Crawlora API key. |
 | `--api-base` | `$CRAWLORA_API_BASE` or `https://api.crawlora.net/api/v1` | API base URL. |
 | `--timeout` | `15s` | Per-request timeout for the local probe. |
 | `--user-agent` | Chrome UA | User-Agent for the local probe. |
+| `--concurrency` | `8` | URLs probed in parallel (batch mode). |
 | `--version` | | Print version and exit. |
 
 ## How detection works
