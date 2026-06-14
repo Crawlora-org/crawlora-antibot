@@ -1,0 +1,14 @@
+# Binaries
+/crawlora-antibot
+/cab
+*.exe
+/dist/
+
+# Test / coverage output
+*.out
+*.test
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
