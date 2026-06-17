@@ -28,7 +28,7 @@ git clone https://github.com/Crawlora-org/crawlora-antibot
 cd crawlora-antibot && go build -o crawlora-antibot .
 ```
 
-Prebuilt binaries (Linux/macOS/Windows) and a Homebrew formula (`brew install Crawlora-org/tap/crawlora-antibot`) ship via GitHub Releases once the repo is public.
+Prebuilt binaries (Linux/macOS/Windows) are published via [GitHub Releases](https://github.com/Crawlora-org/crawlora-antibot/releases). (A Homebrew formula is coming.)
 
 ## Usage
 

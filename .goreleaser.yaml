@@ -29,16 +29,16 @@ checksum:
 release:
   prerelease: auto
 
-# Homebrew tap — requires a `Crawlora-org/homebrew-tap` repo and a PAT with repo
-# scope in the HOMEBREW_TAP_GITHUB_TOKEN secret. Owner-gated; safe to leave until
-# going public.
-brews:
-  - name: crawlora-antibot
-    repository:
-      owner: Crawlora-org
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    homepage: "https://crawlora.net/anti-bot-index"
-    description: "Detect which anti-bot/WAF protects a site and how hard it is to scrape"
-    license: "MIT"
-    skip_upload: auto
+# Homebrew tap — DISABLED until a `Crawlora-org/homebrew-tap` repo + the
+# HOMEBREW_TAP_GITHUB_TOKEN secret exist (owner-gated). Re-enable then; without it
+# `goreleaser release` ships cross-platform binaries + checksums to GitHub Releases.
+# brews:
+#   - name: crawlora-antibot
+#     repository:
+#       owner: Crawlora-org
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+#     homepage: "https://crawlora.net/anti-bot-index"
+#     description: "Detect which anti-bot/WAF protects a site and how hard it is to scrape"
+#     license: "MIT"
+#     skip_upload: auto
