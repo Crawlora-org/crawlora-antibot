@@ -17,6 +17,13 @@ This powers, and is the open companion to, the public [**Anti-Bot Adoption Index
 
 > **Status:** pre-1.0. Signatures and the difficulty heuristic will keep evolving.
 
+## Links
+
+- **Interactive index** — <https://crawlora.net/anti-bot-index> — look up any site; browse by vendor, category, and traffic rank.
+- **The analysis** — ["How much of the web runs anti-bot?"](https://crawlora.net/blog/anti-bot-adoption-index-2026) — the writeup behind this tool (998,497 sites scanned; 53.5% run a managed wall; the busiest sites run the *least*).
+- **Open dataset** — [Crawlora-org/anti-bot-adoption-index-data](https://github.com/Crawlora-org/anti-bot-adoption-index-data) — every per-domain result (CC BY 4.0, ~1M rows).
+- **Methodology** — <https://crawlora.net/anti-bot-index/methodology>.
+
 ## Install
 
 ```sh
