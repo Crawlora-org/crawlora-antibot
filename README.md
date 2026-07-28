@@ -11,18 +11,18 @@
 
 It is a **detector, not a bypass.** It does one passive `GET`, reads the response, and classifies it. It never logs in, submits a form, solves a challenge, or tries to defeat anything.
 
-> Detection runs **locally and open**, from public response fingerprints. For the *measured* difficulty — actually trying to reach the page across HTTP → browser → stealth tiers — add `--difficulty`, which calls [Crawlora](https://crawlora.net)'s hosted engine.
+> Detection runs **locally and open**, from public response fingerprints. For the *measured* difficulty — actually trying to reach the page across HTTP → browser → stealth tiers — add `--difficulty`, which calls [Crawlora](https://crawlora.net?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot)'s hosted engine.
 
-This powers, and is the open companion to, the public [**Anti-Bot Adoption Index**](https://crawlora.net/anti-bot-index).
+This powers, and is the open companion to, the public [**Anti-Bot Adoption Index**](https://crawlora.net/anti-bot-index?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot).
 
 > **Status:** pre-1.0. Signatures and the difficulty heuristic will keep evolving.
 
 ## Links
 
-- **Interactive index** — <https://crawlora.net/anti-bot-index> — look up any site; browse by vendor, category, and traffic rank.
-- **The analysis** — ["How much of the web runs anti-bot?"](https://crawlora.net/blog/anti-bot-adoption-index-2026) — the writeup behind this tool (998,497 sites scanned; 53.5% run a managed wall; the busiest sites run the *least*).
+- **Interactive index** — [https://crawlora.net/anti-bot-index](https://crawlora.net/anti-bot-index?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot) — look up any site; browse by vendor, category, and traffic rank.
+- **The analysis** — ["How much of the web runs anti-bot?"](https://crawlora.net/blog/anti-bot-adoption-index-2026?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot) — the writeup behind this tool (998,497 sites scanned; 53.5% run a managed wall; the busiest sites run the *least*).
 - **Open dataset** — [Crawlora-org/anti-bot-adoption-index-data](https://github.com/Crawlora-org/anti-bot-adoption-index-data) — every per-domain result (CC BY 4.0, ~1M rows).
-- **Methodology** — <https://crawlora.net/anti-bot-index/methodology>.
+- **Methodology** — [https://crawlora.net/anti-bot-index/methodology](https://crawlora.net/anti-bot-index/methodology?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot).
 
 ## Install
 
@@ -70,7 +70,7 @@ printf 'cloudflare.com\nreuters.com\n' | crawlora-antibot
 The local result is a **heuristic** from a single passive request, so it deliberately *over-estimates* (a vendor being present ≠ it actively blocking you). For the **measured** tier — what actually gets through — add `--difficulty`:
 
 ```sh
-export CRAWLORA_API_KEY=...           # get one at https://crawlora.net
+export CRAWLORA_API_KEY=...           # get one at https://crawlora.net?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot
 crawlora-antibot --difficulty example.com
 #   difficulty     medium (3/10, T2) — heuristic      ← local guess
 #   ── measured (Crawlora API) ──
@@ -121,5 +121,5 @@ This tool **detects** protection on **public** pages to help you plan an authori
 
 ## License
 
-[MIT](LICENSE). Built by [Crawlora](https://crawlora.net).
-See the open [Anti-Bot Adoption Index](https://crawlora.net/anti-bot-index) and [methodology](https://crawlora.net/anti-bot-index/methodology).
+[MIT](LICENSE). Built by [Crawlora](https://crawlora.net?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot).
+See the open [Anti-Bot Adoption Index](https://crawlora.net/anti-bot-index?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot) and [methodology](https://crawlora.net/anti-bot-index/methodology?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot).

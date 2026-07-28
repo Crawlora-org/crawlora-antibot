@@ -254,5 +254,5 @@ FLAGS:
 	flag.PrintDefaults()
 	fmt.Fprint(os.Stderr, "\nLocal detection is passive and offline. --difficulty calls Crawlora's hosted\n"+
 		"engine for the live MEASURED tier. This tool DETECTS protection; it does not bypass it.\n"+
-		"Docs & open dataset: https://crawlora.net/anti-bot-index\n")
+		"Docs & open dataset: https://crawlora.net/anti-bot-index?utm_source=github&utm_medium=referral&utm_campaign=crawlora-antibot\n")
 }
